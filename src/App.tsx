@@ -1,29 +1,79 @@
-import React, {useState} from 'react';
-import './App.css';
-import Weather from './components/Weather';
+import React, { useCallback, useState } from "react";
 
+import { WeatherTable } from "./widgets/WeatherTable";
 
-function App() {
-    const [variables, setVariables] = useState(['rain_sum', 'snowfall_sum']);
+import { ForecastVariableDaily } from "./shared/enums";
+
+import { useGetWeather } from "./shared/hooks/useGetWeather";
+
+import "./App.css";
+
+const latitude = 55.751244;
+const longitude = 37.618423;
+
+export const App = () => {
+  const [variables, setVariables] = useState<ForecastVariableDaily[]>([
+    ForecastVariableDaily.WEATHERCODE,
+    ForecastVariableDaily.TEMPERATURE_2M_MAX,
+    ForecastVariableDaily.TEMPERATURE_2M_MIN,
+    ForecastVariableDaily.APPARENT_TEMPERATURE_MAX,
+    ForecastVariableDaily.APPARENT_TEMPERATURE_MIN,
+    // ForecastVariableDaily.SUNRISE,
+    // ForecastVariableDaily.SUNSET,
+    // ForecastVariableDaily.PRECIPITATION_SUM,
+    // ForecastVariableDaily.RAIN_SUM,
+    // ForecastVariableDaily.SHOWERS_SUM,
+    // ForecastVariableDaily.SNOWFALL_SUM,
+    // ForecastVariableDaily.PRECIPITATION_HOURS,
+    ForecastVariableDaily.WINDSPEED_10M_MAX,
+    ForecastVariableDaily.WINDGUSTS_10M_MAX,
+    // ForecastVariableDaily.WINDDIRECTION_10M_DOMINANT,
+    // ForecastVariableDaily.SHORTWAVE_RADIATION_SUM,
+    // ForecastVariableDaily.ET0_FAO_EVAPOTRANSPIRATION,
+  ]);
+
+  const { weather } = useGetWeather({ latitude, longitude, variables });
+
+  const onSubmit = useCallback(
+    (event: React.SyntheticEvent) => {
+      event.preventDefault();
+      const target = event.target as typeof event.target & {
+        variable: { value: ForecastVariableDaily | "" };
+      };
+
+      const variable = target.variable.value as ForecastVariableDaily;
+
+      if (Object.values(ForecastVariableDaily).includes(variable)) {
+        setVariables((prev) => [...prev, variable]);
+      }
+    },
+    [variables],
+  );
 
   return (
     <div className="main">
-        <div>
-            <label>
-                {/* available values:
-                weathercode, temperature_2m_max, temperature_2m_min, apparent_temperature_max, apparent_temperature_min, sunrise, sunset, precipitation_sum, rain_sum,
-                showers_sum, snowfall_sum, precipitation_hours, windspeed_10m_max, windgusts_10m_max, winddirection_10m_dominant, shortwave_radiation_sum, et0_fao_evapotranspiration
-                */}
+      <h3>Все доступные переменные:</h3>
+      <ul>
+        {Object.entries(ForecastVariableDaily).map(([key, value]) => (
+          <li key={key}>{value}</li>
+        ))}
+      </ul>
 
-                <input type="text" onInput={e => {
-                    variables.push((e.target as HTMLInputElement).value)
-                }}/>
+      <div>
+        <form onSubmit={onSubmit}>
+          <label>
+            Введите переменную
+            <input
+              type="text"
+              name="variable"
+              placeholder="Введите переменную"
+            />
+          </label>
+          <button type="submit">Добавить</button>
+        </form>
+      </div>
 
-            </label>
-        </div>
-      <Weather lat={55.751244} long={37.618423} variables={variables} />
+      {weather && <WeatherTable data={weather} variables={variables} />}
     </div>
   );
-}
-
-export default App;
+};
